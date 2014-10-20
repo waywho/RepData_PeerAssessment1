@@ -66,8 +66,50 @@ sumNA <- sum(is.na(activity$steps))
  
 There are in total `r sumNA` rows with NAs.
 
+``` {r imput}
+activityFilled <- data.frame(steps = numeric(), 
+                             date = as.Date(character()), interval = numeric())
+
+for(i in 1:length(activity$steps)) {
+        if(is.na(activity[i, "steps"])) {
+                activityFilled[i, "steps"] <- stepsInt[i, "meanSteps"]
+                activityFilled[i, c("date", "interval")] <- activity[i, c("date", "interval")]
+                } else {
+                activityFilled[i, ] <- activity[i, ]
+                }
+        }
+```
+
+``` {r hist2}
+hist(activityFilled$steps, main = "Steps Take Each Day - NA filled")
+```
+
+``` {r mean2}
+stepsMean2 <- mean(activity$steps, na.rm = TRUE)
+stepsMedian2 <- median(activity$steps, na.rm = TRUE)
+```
+
+The mean of the total number of steps take per day is `r stepsMean2` steps and median total number of steps taken per da y is `r stepsMedian2` steps. The mean and median different from part 1 of the estimates. (Part 1 mean is `r stepsMean` and median is `r stepsMedian`).
+
 ## Are there differences in activity patterns between weekdays and weekends?
 
+``` {r weekdayweekend}
+day <- as.factor(weekdays(activityFilled$date))
+activityFilled <- cbind(activityFilled, day)
+week <- as.factor(ifelse(!weekdays(activityFilled$date) %in% c("Saturday", "Sunday"), "weekday", "weekend"))
+activityFilled <- cbind(activityFilled, week)
+activityFilled$interval <- as.factor(activityFilled$interval)
+
+par(mfrow = c(2, 1))
+with(subset(activityFilled, week == "weekday"), plot(interval, steps, 
+                                                     xlab = "interval", ylab = "steps", type = "l",
+                                                     main = "Weekday"))
+
+with(subset(activityFilled, week == "weekend"), plot(interval, steps, 
+                                                     xlab = "interval", ylab = "steps", type = "l", 
+                                                     main = "Weekend"))
+
+```
 
 
 
