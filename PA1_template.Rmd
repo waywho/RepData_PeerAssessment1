@@ -5,18 +5,24 @@ date: "19 October 2014"
 output: html_document
 keep_md: true
 ---
+## Introduction
+
+This is an analysis assignment for the Reproducible Research Course on Coursera. This is an analysis of the [Activity monitoring data] (https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) from the course website. The data is analysed in R.
 
 ## Loading and preprocessing the data
 
 ```{r readfile}
-activity <- read.csv("~/Documents/R/activity.csv")
+temp <- tempfile()
+download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", temp)
+activity <- read.csv(unz(temp, "activity.csv"))
+unlink(temp)
 activity$date <- as.Date(activity$date, format = "%Y-%m-%d")
 activity$interval <- as.factor(activity$interval)
 ```
 
 ```{r summarise}
 library(dplyr)
-
+library(lattice)
 stepsSum <- activity %>%
         group_by(date) %>%
         summarise(stpSum = sum(steps))
@@ -36,7 +42,7 @@ stepsMean <- mean(activity$steps, na.rm = TRUE)
 stepsMedian <- median(activity$steps, na.rm = TRUE)
 ```
 
-The mean of the total number of steps take per day is `r stepsMean` steps and median total number of steps taken per da y is `r stepsMedian` steps.
+The mean of the total number of steps take per day is `r stepsMean` steps and median total number of steps taken per day is `r stepsMedian` steps.
 
 ## What is the average daily activity pattern?
 
@@ -48,8 +54,8 @@ stepsInt <- activity %>%
                 meanSteps = mean(steps, na.rm = TRUE),
                 medianSteps = median(steps, na.rm = TRUE))
 
-with(stepsInt, plot(interval, meanSteps, ylab = "Average Number of Steps", 
-                    xlab = "Intervals", type = "l"))
+xyplot(meanSteps ~ interval, data = stepsInt, type = "l", ylab = "Average Number of Steps", 
+                    xlab = "Intervals")
 ```
 
 ``` {r maxInt}
@@ -94,21 +100,20 @@ The mean of the total number of steps take per day is `r stepsMean2` steps and m
 ## Are there differences in activity patterns between weekdays and weekends?
 
 ``` {r weekdayweekend}
-day <- as.factor(weekdays(activityFilled$date))
-activityFilled <- cbind(activityFilled, day)
-week <- as.factor(ifelse(!weekdays(activityFilled$date) %in% c("Saturday", "Sunday"), "weekday", "weekend"))
-activityFilled <- cbind(activityFilled, week)
-activityFilled$interval <- as.factor(activityFilled$interval)
+activityFilled <- activityFilled %>%
+        mutate(day = as.factor(weekdays(date))) %>%
+        mutate(week = as.factor(ifelse(!weekdays(activityFilled$date) %in% c("Saturday", "Sunday"), "weekday", "weekend")))
 
-par(mfrow = c(2, 1))
-with(subset(activityFilled, week == "weekday"), plot(interval, steps, 
-                                                     xlab = "interval", ylab = "steps", type = "l",
-                                                     main = "Weekday"))
+activityFilled <- transform(activityFilled, interval = factor(interval))
 
-with(subset(activityFilled, week == "weekend"), plot(interval, steps, 
-                                                     xlab = "interval", ylab = "steps", type = "l", 
-                                                     main = "Weekend"))
 
+aveActivityWeek <- activityFilled %>%
+        group_by(week, interval) %>%
+        summarise(
+                mean_steps = mean(steps, na.rm = TRUE)
+                )
+
+xyplot(mean_steps ~ interval|week, type = "l", data = aveActivityWeek, layout = c(1, 2), xlab = "Steps", ylab = "Intervals")
 ```
 
 
